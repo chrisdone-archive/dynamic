@@ -1,0 +1,33 @@
+name:                dynamic
+version:             0.0.1
+synopsis:            A dynamic type for Haskell
+description:         Want to do dynamically typed programming in Haskell sometimes? Here you go!
+homepage:            https://github.com/chrisdone/dynamic#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Chris Done
+maintainer:          chrisdone@gmail.com
+copyright:           2019 Chris Done
+category:            Development
+build-type:          Simple
+extra-source-files:  README.md
+cabal-version:       >=1.10
+
+library
+  hs-source-dirs:      src
+  ghc-options:         -Wall
+  exposed-modules:     Dynamic
+  build-depends:       base >= 4.7 && < 5,
+    aeson,
+    bytestring,
+    aeson-pretty,
+    cassava,
+    containers,
+    text,
+    vector,
+    unordered-containers
+  default-language:    Haskell2010
+
+source-repository head
+  type:     git
+  location: https://github.com/chrisdone/dynamic
