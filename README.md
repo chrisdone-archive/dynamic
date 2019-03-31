@@ -219,9 +219,14 @@ The answer is: Yes, Haskell can do that!
 [1,2,3,4,5]
 ```
 
-## Coming soon
+## Append things together
 
-Monoid instances so we can append `Dynamic`s together!
+Like in JavaScript, we try to do our best to make something out of appending...
+
+``` haskell
+> "Wat" <> 1 <> "!" <> Null
+"Wat1!"
+```
 
 ## Suspicious?
 

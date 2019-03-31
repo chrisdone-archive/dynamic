@@ -176,6 +176,19 @@ instance Csv.ToField Dynamic where
       String i -> T.encodeUtf8 i
       other -> L.toStrict (Aeson.encode other)
 
+instance Semigroup Dynamic where
+  Null <> x = x
+  x <> Null = x
+  Array xs <> Array ys = Array (xs <> ys)
+  Dictionary x <> Dictionary y = Dictionary (x <> y)
+  String x <> String y = String (x <> y)
+  String x <> Double y = String (x <> toText (Double y))
+  Double x <> String y = String (toText (Double x) <> y)
+  String x <> Bool y = String (x <> toText (Bool y))
+  Bool x <> String y = String (toText (Bool x) <> y)
+  -- Everything else
+  x <> y = String (toText x <> toText y)
+
 --------------------------------------------------------------------------------
 -- Accessors
 
