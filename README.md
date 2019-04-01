@@ -285,9 +285,6 @@ Looks like pennies, let's divide that by 100. What's the total +/- sum
 of my last 5 transactions?
 
 ```haskell
-> (/100) $ (!"amount") $ head $ toList $ monzo!"transactions"
-100
-> map ((/100) . (!"amount")) $ toList $ monzo!"transactions"
 > sum $ map ((/100) . (!"amount")) $ take 5 $ toList $ monzo!"transactions"
 468.65
 ```
