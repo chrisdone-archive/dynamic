@@ -247,9 +247,9 @@ Here's an exporation of my Monzo (bank account) data.
 
 Load up the JSON output:
 
-``` haskell
-> monzo <- fromJsonFile "monzo.json"
 ```haskell
+> monzo <- fromJsonFile "monzo.json"
+```
 
 Preview what's in it:
 
@@ -299,7 +299,8 @@ What categories are there?
 ["general","entertainment","groceries","eating_out","shopping","expenses","bills","personal_care","cash"]
 ```
 
-How many transactions did I do in each category?
+How many transactions did I do in each category? Let's use Data.Map to
+histogram that.
 
 ```haskell
 > fromDict $ M.toList $ foldl (\cats cat -> M.insertWith (+) cat 1 cats) mempty $ map (!"category") $ toList $ monzo!"transactions"
