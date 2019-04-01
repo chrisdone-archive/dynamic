@@ -1,5 +1,5 @@
 name:                dynamic
-version:             0.0.4
+version:             0.0.5
 synopsis:            A dynamic type for Haskell
 description:         Want to do dynamically typed programming in Haskell sometimes? Here you go!
 homepage:            https://github.com/chrisdone/dynamic#readme
