@@ -240,3 +240,81 @@ silly a =
 ```
 
 That passes [the dynamic typing test](https://stackoverflow.com/a/27791387).
+
+## Mix and match your regular Haskell functions
+
+Here's an exporation of my Monzo (bank account) data.
+
+Load up the JSON output:
+
+``` haskell
+> monzo <- fromJsonFile "monzo.json"
+```haskell
+
+Preview what's in it:
+
+```haskell
+> take 100 $ show monzo
+"{\n    \"transactions\": [\n        {\n            \"amount\": 10000,\n            \"dedupe_id\": \"com.monzo.f"
+> toKeys monzo
+["transactions"]
+```
+
+OK, just transactions. How many?
+
+```haskell
+> length $ toList $ monzo!"transactions"
+119
+```
+
+What keys do I get in each transaction?
+
+```haskell
+> toKeys $ head $ toList $ monzo!"transactions"
+["amount","dedupe_id","attachments","can_be_made_subscription","fees","created","category","settled","can_split_the_bill","can_add_to_tab","originator","currency","include_in_spending","merchant","can_be_excluded_from_breakdown","international","counterparty","scheme","local_currency","metadata","id","labels","updated","account_balance","is_load","account_id","notes","user_id","local_amount","description"]
+```
+
+What's in `amount`?
+
+```haskell
+> (!"amount") $ head $ toList $ monzo!"transactions"
+10000
+```
+
+Looks like pennies, let's divide that by 100. What's the total +/- sum
+of my last 5 transactions?
+
+```haskell
+> (/100) $ (!"amount") $ head $ toList $ monzo!"transactions"
+100
+> map ((/100) . (!"amount")) $ toList $ monzo!"transactions"
+> sum $ map ((/100) . (!"amount")) $ take 5 $ toList $ monzo!"transactions"
+468.65
+```
+
+What categories are there?
+
+```haskell
+> nub $ map (!"category") $ toList $ monzo!"transactions"
+["general","entertainment","groceries","eating_out","shopping","expenses","bills","personal_care","cash"]
+```
+
+How many transactions did I do in each category?
+
+```haskell
+> fromDict $ M.toList $ foldl (\cats cat -> M.insertWith (+) cat 1 cats) mempty $ map (!"category") $ toList $ monzo!"transactions"
+{
+    "personal_care": 2,
+    "entertainment": 8,
+    "bills": 3,
+    "general": 58,
+    "groceries": 16,
+    "shopping": 8,
+    "expenses": 19,
+    "eating_out": 4,
+    "cash": 1
+}
+>
+```
+
+Cool!

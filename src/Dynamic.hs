@@ -106,6 +106,10 @@ instance Enum Dynamic where
 instance Real Dynamic where
   toRational = toRational . toDouble
 
+instance Fractional Dynamic where
+  fromRational = Double . fromRational
+  recip = Double . recip . toDouble
+
 -- | Implemented via 'Double'.
 instance Integral Dynamic where
   toInteger = toInteger . toInt
