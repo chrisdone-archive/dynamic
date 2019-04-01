@@ -207,7 +207,7 @@ instance Semigroup Dynamic where
     String str -> String (T.take 1 (T.drop (toInt k) str))
     _ -> throw (DynamicTypeError "Can't index this type of value.")
 
-infixr 9 !
+infixl 9 !
 
 -- | set key value object -- set the field's value.
 set :: Dynamic -> Dynamic -> Dynamic -> Dynamic
