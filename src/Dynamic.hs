@@ -84,9 +84,11 @@ data Dynamic
 --------------------------------------------------------------------------------
 -- Class instances
 
+-- | Dumps it to JSON.
 instance Show Dynamic where
   show = T.unpack . toJson
 
+-- | Converts everything to a double.
 instance Num Dynamic where
   (toDouble -> x) + (toDouble -> y) = Double (x + y)
   (toDouble -> x) * (toDouble -> y) = Double (x * y)
@@ -95,22 +97,27 @@ instance Num Dynamic where
   fromInteger = Double . fromInteger
   negate = Double . negate . toDouble
 
+-- | Treats the dynamic as a double.
 instance Enum Dynamic where
   toEnum = Double . fromIntegral
   fromEnum = fromEnum . toDouble
 
+-- | Implemented via 'toDouble'.
 instance Real Dynamic where
   toRational = toRational . toDouble
 
+-- | Implemented via 'Double'.
 instance Integral Dynamic where
   toInteger = toInteger . toInt
   quotRem x y =
     (Double . fromIntegral *** Double . fromIntegral)
       (quotRem (toInt x) (toInt y))
 
+-- | Makes a 'String'.
 instance IsString Dynamic where
   fromString = String . T.pack
 
+-- | Does what you'd expect.
 instance Aeson.FromJSON Dynamic where
   parseJSON =
     \case
@@ -121,6 +128,7 @@ instance Aeson.FromJSON Dynamic where
       Aeson.Object hm -> fmap Dictionary (Aeson.parseJSON (Aeson.Object hm))
       Aeson.String s -> pure (String s)
 
+-- | Pretty much a 1:1 correspondance.
 instance Aeson.ToJSON Dynamic where
   toJSON =
     \case
@@ -131,14 +139,18 @@ instance Aeson.ToJSON Dynamic where
       Bool t -> Aeson.toJSON t
       Null -> Aeson.toJSON Aeson.Null
 
+-- | Produces an array representing a row of columns.
 instance Csv.FromRecord Dynamic where
   parseRecord xs = Array <$> traverse Csv.parseField xs
 
+-- | Produces a dictionary representing a row of columns.
 instance Csv.FromNamedRecord Dynamic where
   parseNamedRecord xs =
     Dictionary . HM.fromList . map (first T.decodeUtf8) . HM.toList <$>
     traverse Csv.parseField xs
 
+-- | Tries to figure out decimals, coerce true/false into 'Bool', and
+-- null into 'Null'.
 instance Csv.FromField Dynamic where
   parseField bs =
     case T.decimal text of
@@ -153,6 +165,7 @@ instance Csv.FromField Dynamic where
       text = T.decodeUtf8 bs
       asString = pure (String (T.decodeUtf8 bs))
 
+-- | Renders the elements of containers, or else a singleton.
 instance Csv.ToRecord Dynamic where
   toRecord =
     \case
@@ -163,6 +176,7 @@ instance Csv.ToRecord Dynamic where
       Bool d -> V.singleton (Csv.toField (Bool d))
       Null -> mempty
 
+-- | Just works on dictionaries.
 instance Csv.ToNamedRecord Dynamic where
   toNamedRecord =
     \case
@@ -170,12 +184,15 @@ instance Csv.ToNamedRecord Dynamic where
         HM.fromList (map (bimap T.encodeUtf8 Csv.toField) (HM.toList hm))
       _ -> throw (TypeError "Can't make a CSV row out of a non-dictionary")
 
+-- | Identity for strings, else JSON output.
 instance Csv.ToField Dynamic where
   toField =
     \case
       String i -> T.encodeUtf8 i
       other -> L.toStrict (Aeson.encode other)
 
+-- | Nulls are identity, arrays/dicts join, string + double/bool
+-- append everything else is @toText x <> toText y@.
 instance Semigroup Dynamic where
   Null <> x = x
   x <> Null = x
@@ -192,7 +209,7 @@ instance Semigroup Dynamic where
 --------------------------------------------------------------------------------
 -- Accessors
 
--- | object!key to access the field at key.
+-- | @object ! key@ to access the field at key.
 (!) :: Dynamic -> Dynamic -> Dynamic
 (!) obj k =
   case obj of
@@ -209,14 +226,14 @@ instance Semigroup Dynamic where
 
 infixl 9 !
 
--- | set key value object -- set the field's value.
+-- | @set key value object@ -- set the field's value.
 set :: Dynamic -> Dynamic -> Dynamic -> Dynamic
 set k v obj =
   case obj of
     Dictionary mp -> Dictionary (HM.insert (toText k) v mp)
     _ -> throw (DynamicTypeError "Not an object!")
 
--- | modify k f obj -- modify the value at key.
+-- | @modify k f obj@ -- modify the value at key.
 modify :: Dynamic -> (Dynamic -> Dynamic) -> Dynamic -> Dynamic
 modify k f obj =
   case obj of
@@ -325,40 +342,48 @@ toElems =
 --------------------------------------------------------------------------------
 -- Input
 
+-- | Read JSON into a Dynamic.
 fromJson :: Text -> Dynamic
 fromJson =
   fromMaybe (throw (ParseError "Unable to parse JSON.")) .
   Aeson.decode . L.fromStrict . T.encodeUtf8
 
+-- | Read CSV into a list of rows with columns (don't use column names).
 fromCsv :: Text -> [[Dynamic]]
 fromCsv =
   V.toList .
   either (const (throw (ParseError "Unable to parse CSV."))) id .
   Csv.decode Csv.NoHeader . L.fromStrict . T.encodeUtf8
 
+-- | Read CSV into a list of rows (use column names).
 fromCsvNamed :: Text -> [Dynamic]
 fromCsvNamed =
   V.toList .
   either (const (throw (ParseError "Unable to parse CSV."))) snd .
   Csv.decodeByName . L.fromStrict . T.encodeUtf8
 
+-- | Same as 'fromJson' but from a file.
 fromJsonFile :: FilePath -> IO Dynamic
 fromJsonFile = fmap fromJson . T.readFile
 
+-- | Same as 'fromCsv' but from a file.
 fromCsvFile :: FilePath -> IO [[Dynamic]]
 fromCsvFile = fmap fromCsv . T.readFile
 
+-- | Same as 'fromCsvFileNamed' but from a file.
 fromCsvFileNamed :: FilePath -> IO [Dynamic]
 fromCsvFileNamed = fmap fromCsvNamed . T.readFile
 
+-- | Convert a list of dynamics to a dynamic list.
 fromList :: [Dynamic] -> Dynamic
 fromList = Array . V.fromList
 
+-- | Convert a list of key/pairs to a dynamic dictionary.
 fromDict :: [(Dynamic, Dynamic)] -> Dynamic
 fromDict hm = Dictionary (HM.fromList (map (bimap toText id) hm))
 
 --------------------------------------------------------------------------------
--- Helpers
+-- Web helpers
 
 -- | HTTP request for text content.
 get :: Dynamic -> IO Text
