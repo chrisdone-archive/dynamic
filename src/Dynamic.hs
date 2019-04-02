@@ -13,6 +13,7 @@ module Dynamic
   , (!)
   , set
   , modify
+  , del
   -- * Input
   , fromJson
   , fromCsv
@@ -242,6 +243,13 @@ modify :: Dynamic -> (Dynamic -> Dynamic) -> Dynamic -> Dynamic
 modify k f obj =
   case obj of
     Dictionary mp -> Dictionary (HM.adjust f (toText k) mp)
+    _ -> throw (DynamicTypeError "Not an object!")
+
+-- | @del k obj@ -- delete the key k in obj.
+del :: Dynamic -> Dynamic -> Dynamic
+del k obj =
+  case obj of
+    Dictionary mp -> Dictionary (HM.delete (toText k) mp)
     _ -> throw (DynamicTypeError "Not an object!")
 
 --------------------------------------------------------------------------------
