@@ -37,6 +37,7 @@ module Dynamic
   , toElems
   -- * Web requests
   , get
+  , post
   , getJson
   , postJson
   ) where
@@ -46,11 +47,13 @@ import           Control.Exception
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Encode.Pretty as Aeson
 import           Data.Bifunctor
+import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Csv as Csv
 import           Data.Data
 import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
+import           Data.List
 import           Data.Maybe
 import           Data.String
 import           Data.Text (Text)
@@ -255,6 +258,12 @@ del k obj =
 --------------------------------------------------------------------------------
 -- Output
 
+toString :: Dynamic -> String
+toString = T.unpack . toText
+
+toByteString :: Dynamic -> ByteString
+toByteString = T.encodeUtf8 . toText
+
 -- | Convert to string if string, or else JSON encoding.
 toText :: Dynamic -> Text
 toText =
@@ -397,30 +406,56 @@ fromDict hm = Dictionary (HM.fromList (map (bimap toText id) hm))
 --------------------------------------------------------------------------------
 -- Web helpers
 
--- | HTTP request for text content.
-get :: Dynamic -> IO Text
-get url = do
+-- | HTTP GET request for text content.
+get ::
+     Dynamic
+  -> [(Dynamic, Dynamic)] -- ^ Headers.
+  -> IO Text
+get url headers = do
   response <-
     httpBS
-      (addRequestHeader
-         "User-Agent"
-         "haskell-dynamic"
-         (fromString (T.unpack (toText url))))
+      (foldl'
+         (\r (k, v) ->
+            addRequestHeader (fromString (toString k)) (toByteString v) r)
+         (addRequestHeader
+            "User-Agent"
+            "haskell-dynamic"
+            (fromString (toString url)))
+         headers)
   pure (T.decodeUtf8 (getResponseBody response))
 
--- | HTTP request for text content.
-getJson :: Dynamic -> IO Dynamic
-getJson = fmap fromJson . get
+-- | HTTP GET request for text content.
+getJson ::
+     Dynamic
+  -> [(Dynamic, Dynamic)] -- ^ Headers.
+  -> IO Dynamic
+getJson url headers = fmap fromJson (get url headers)
 
--- | HTTP request for text content.
-postJson :: Dynamic -> Dynamic -> IO Text
-postJson url body = do
+-- | HTTP POST request for text content.
+post ::
+     Dynamic -- ^ URL.
+  -> [(Dynamic, Dynamic)] -- ^ Headers.
+  -> Dynamic -- ^ Body.
+  -> IO Text
+post url headers body = do
   response <-
     httpBS
-      (addRequestHeader
-         "User-Agent"
-         "haskell-dynamic"
-         (setRequestMethod
-            "POST"
-            (setRequestBodyJSON body (fromString (T.unpack (toText url))))))
+      (foldl'
+         (\r (k, v) ->
+            addRequestHeader (fromString (toString k)) (toByteString v) r)
+         (addRequestHeader
+            "User-Agent"
+            "haskell-dynamic"
+            (setRequestMethod
+               "POST"
+               (setRequestBodyJSON body (fromString (toString url)))))
+         headers)
   pure (T.decodeUtf8 (getResponseBody response))
+
+-- | HTTP POST request for JSON content.
+postJson ::
+     Dynamic -- ^ URL.
+  -> [(Dynamic, Dynamic)] -- ^ Headers.
+  -> Dynamic -- ^ Body.
+  -> IO Dynamic
+postJson url headers body = fmap fromJson (post url headers body)

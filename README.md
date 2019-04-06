@@ -70,7 +70,7 @@ Get object keys or array or string indexes via `!`:
 ## Web requests!
 
 ```json
-> chris <- getJson "https://api.github.com/users/chrisdone"
+> chris <- getJson "https://api.github.com/users/chrisdone" []
 > chris
 {
     "bio": null,
