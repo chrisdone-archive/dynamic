@@ -1,0 +1,6 @@
+:set -XOverloadedStrings
+:set prompt "> "
+:l src/Dynamic.hs
+import Data.Ord
+import Data.List
+default (Dynamic)
